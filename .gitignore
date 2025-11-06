@@ -1,4 +1,128 @@
-node_modules/
-.env
+# ======================================================
+# SISTEMA / EDITORES
+# ======================================================
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.tmp
+*.bak
 *.log
+
+# IDEs
+.vscode/
+.idea/
+*.iml
+
+# ======================================================
+# DEPENDÊNCIAS
+# ======================================================
+node_modules/
+bower_components/
+vendor/
+
+# Python (caso tenha)
+__pycache__/
+*.pyc
+
+# Go (caso tenha)
+bin/
+pkg/
+
+# Java / Kotlin
+.gradle/
+build/
+out/
+*.class
+*.jar
+*.war
+*.ear
+
+# ======================================================
+# ENVIRONMENT / SEGREDOS
+# ======================================================
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+.secrets
+*.pem
 *.key
+*.crt
+
+# Docker Secrets
+docker.env
+
+# ======================================================
+# LOGS
+# ======================================================
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# PM2 logs
+pm2.log
+logs/
+*.log
+
+# ======================================================
+# FRONTEND (React, Next.js, Vue, etc.)
+# ======================================================
+dist/
+build/
+.cache/
+.next/
+.nuxt/
+coverage/
+.sass-cache/
+.cache-loader/
+public/static/
+
+# React Native / Expo
+.expo/
+.expo-shared/
+android/
+ios/
+web-build/
+*.keystore
+*.jks
+
+# Metro cache
+metro-cache/
+.expo-metrocachedir/
+
+# ======================================================
+# MOBILE (iOS / Android)
+# ======================================================
+# iOS
+Pods/
+xcuserdata/
+DerivedData/
+*.xcworkspace
+
+# Android
+.gradle/
+local.properties
+/app/build/
+captures/
+
+# ======================================================
+# BANCOS / DUMPS
+# ======================================================
+*.sqlite
+*.db
+*.sql
+
+# Prisma
+prisma/migrations/
+prisma/.cache/
+
+# ======================================================
+# TESTES
+# ======================================================
+coverage/
+test-results/
+junit.xml
