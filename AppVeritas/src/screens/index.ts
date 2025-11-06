@@ -1,0 +1,11 @@
+export { SplashScreen } from './SplashScreen';
+export { AuthScreen } from './AuthScreen';
+export { OnboardingScreen } from './OnboardingScreen';
+export { InterestsScreen } from './InterestsScreen';
+export { ProjectsScreen } from './ProjectsScreen';
+export { FavoritesScreen } from './FavoritesScreen';
+export { AlertsScreen } from './AlertsScreen';
+export { ProfileScreen } from './ProfileScreen';
+export { ProjectDetailsScreen } from './ProjectDetailsScreen';
+export { NotificationsScreen } from './NotificationsScreen';
+export { TrendingScreen } from './TrendingScreen';
