@@ -1,11 +1,28 @@
-name: CI
-
-on: [push, pull_request]
-
+name: ci-required
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
 jobs:
-  build:
+  backend-test:
+    name: backend-test
     runs-on: ubuntu-latest
+    defaults: { run: { working-directory: Backend } }
     steps:
-      - uses: actions/checkout@v3
-      - name: Run simple check
-        run: echo "Tudo certo 🚀"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test -- --ci
+  app-lint:
+    name: app-lint
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: AppVeritas } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: npm ci
+      - run: npm run lint
