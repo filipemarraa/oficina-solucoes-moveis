@@ -12,6 +12,7 @@ app.use('/auth', require('./routes/auth'));
 app.use('/profile', require('./routes/profile'));
 app.use('/favorites', require('./routes/favorites'));
 app.use('/alerts', require('./routes/alerts'));
+app.use('/projects', require('./routes/projects'));
 
 app.get('/', (req, res) => {
   res.json({ message: 'VERITAS API is running!' });

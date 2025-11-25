@@ -12,6 +12,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Notification, RootStackParamList } from '../types';
 import { colors, fontSize, fontWeight, spacing, borderRadius, shadows } from '../constants/theme';
+import { alertsService } from '../services/backendService';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Notifications'>;
 
@@ -65,7 +66,51 @@ const MOCK_NOTIFICATIONS: Notification[] = [
 
 export const NotificationsScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
-  const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    loadNotifications();
+  }, []);
+
+  const loadNotifications = async () => {
+    setLoading(true);
+    const { data, error } = await alertsService.getAlerts();
+    if (data) {
+      const mappedNotifications: Notification[] = data.map((alert: any) => ({
+        id: alert.id,
+        type: mapAlertType(alert.type),
+        title: alert.title,
+        description: alert.message,
+        projectId: alert.project_id,
+        projectTitle: alert.project_id ? `Projeto #${alert.project_id}` : undefined, // Placeholder title
+        date: alert.created_at,
+        isRead: alert.is_read,
+        icon: getIconForType(alert.type),
+      }));
+      setNotifications(mappedNotifications);
+    } else {
+      console.error('Erro ao carregar notificações:', error);
+    }
+    setLoading(false);
+  };
+
+  const mapAlertType = (backendType: string): any => {
+    switch (backendType) {
+      case 'update': return 'interest_update';
+      case 'success': return 'status_change';
+      default: return 'keyword_match';
+    }
+  };
+
+  const getIconForType = (backendType: string): string => {
+    switch (backendType) {
+      case 'update': return '👍';
+      case 'success': return '📊';
+      case 'info': return 'ℹ️';
+      default: return '🔔';
+    }
+  };
 
   const groupNotificationsByDate = () => {
     const now = new Date();
@@ -123,13 +168,17 @@ export const NotificationsScreen: React.FC = () => {
     }
   };
 
-  const handleMarkAsRead = (id: string) => {
+  const handleMarkAsRead = async (id: string) => {
+    // Optimistic update
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
     );
+    await alertsService.markAlertAsRead(id);
   };
 
   const handleDelete = (id: string) => {
+    // Note: Backend doesn't have delete endpoint for alerts yet, so we just hide it locally
+    // or we could implement a delete endpoint. For now, local hide.
     RNAlert.alert(
       'Excluir notificação',
       'Tem certeza que deseja excluir esta notificação?',
@@ -171,7 +220,7 @@ export const NotificationsScreen: React.FC = () => {
   const handleNotificationPress = (notification: Notification) => {
     // Marcar como lida
     handleMarkAsRead(notification.id);
-    
+
     // Navegar para o projeto (se houver)
     if (notification.projectId) {
       // TODO: Buscar o projeto completo e navegar
@@ -256,10 +305,22 @@ export const NotificationsScreen: React.FC = () => {
         data={['content']}
         renderItem={() => (
           <View>
-            {renderSection('Hoje', groupedNotifications['Hoje'])}
-            {renderSection('Ontem', groupedNotifications['Ontem'])}
-            {renderSection('Esta Semana', groupedNotifications['Esta Semana'])}
-            {renderSection('Mais Antigas', groupedNotifications['Mais Antigas'])}
+            {notifications.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyEmoji}>📭</Text>
+                <Text style={styles.emptyTitle}>Sem notificações</Text>
+                <Text style={styles.emptyText}>
+                  Você não possui novas notificações no momento.
+                </Text>
+              </View>
+            ) : (
+              <>
+                {renderSection('Hoje', groupedNotifications['Hoje'])}
+                {renderSection('Ontem', groupedNotifications['Ontem'])}
+                {renderSection('Esta Semana', groupedNotifications['Esta Semana'])}
+                {renderSection('Mais Antigas', groupedNotifications['Mais Antigas'])}
+              </>
+            )}
           </View>
         )}
         keyExtractor={(item) => item}
@@ -386,5 +447,26 @@ const styles = StyleSheet.create({
   },
   bellIcon: {
     fontSize: 24,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.xxl,
+    marginTop: spacing.xl,
+  },
+  emptyEmoji: {
+    fontSize: 64,
+    marginBottom: spacing.md,
+  },
+  emptyTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
+  emptyText: {
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
 });

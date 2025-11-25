@@ -175,3 +175,42 @@ export const alertsService = {
     }
   },
 };
+
+// Projects Service
+export const projectsService = {
+  async getTrending() {
+    try {
+      const response = await api.get('/projects/trending');
+      return { data: response.data, error: null };
+    } catch (error: any) {
+      return {
+        data: [],
+        error: error.response?.data?.error || 'Erro ao buscar projetos em alta',
+      };
+    }
+  },
+
+  async registerInteraction(projectId: string, type: 'like' | 'dislike') {
+    try {
+      const response = await api.post(`/projects/${projectId}/interaction`, { type });
+      return { data: response.data, error: null };
+    } catch (error: any) {
+      return {
+        data: null,
+        error: error.response?.data?.error || 'Erro ao registrar interação',
+      };
+    }
+  },
+
+  async removeInteraction(projectId: string) {
+    try {
+      const response = await api.delete(`/projects/${projectId}/interaction`);
+      return { data: response.data, error: null };
+    } catch (error: any) {
+      return {
+        data: null,
+        error: error.response?.data?.error || 'Erro ao remover interação',
+      };
+    }
+  },
+};

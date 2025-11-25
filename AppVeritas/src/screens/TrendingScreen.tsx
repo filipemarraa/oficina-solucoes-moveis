@@ -14,64 +14,21 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ProjectCard } from '../components';
 import { TrendingProject, RootStackParamList } from '../types';
 import { colors, fontSize, fontWeight, spacing, borderRadius } from '../constants/theme';
+import { projectsService, favoritesService } from '../services/backendService';
+import {
+  fetchCamaraPropositionDetails,
+  fetchCamaraPropositionAuthors,
+  transformCamaraToProject
+} from '../services/governmentApi';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'MainTabs'>;
 
-// Mock data para demonstração - projetos com mais interações
-const MOCK_TRENDING_PROJECTS: TrendingProject[] = [
-  {
-    id: '1',
-    title: 'PL 1234/2024 - Sistema Nacional de Saúde',
-    number: 'PL 1234/2024',
-    summary: 'Propõe melhorias no sistema nacional de saúde pública com foco em atendimento de emergência',
-    category: 'Saúde',
-    status: 'Em tramitação',
-    date: '2024-10-28',
-    authorId: '1',
-    authorName: 'Deputado João Silva',
-    currentStage: 'Comissão de Saúde',
-    progress: 45,
-    isFavorite: false,
-    interactionsCount: 234,
-    interactionsToday: 45,
-  },
-  {
-    id: '2',
-    title: 'PL 5678/2024 - Educação Digital',
-    number: 'PL 5678/2024',
-    summary: 'Implementa programa nacional de educação digital nas escolas públicas',
-    category: 'Educação',
-    status: 'Em tramitação',
-    date: '2024-10-27',
-    authorId: '2',
-    authorName: 'Deputada Maria Santos',
-    currentStage: 'Comissão de Educação',
-    progress: 60,
-    isFavorite: false,
-    interactionsCount: 189,
-    interactionsToday: 38,
-  },
-  {
-    id: '3',
-    title: 'PL 9012/2024 - Segurança Pública',
-    number: 'PL 9012/2024',
-    summary: 'Cria programa de modernização das polícias estaduais',
-    category: 'Segurança',
-    status: 'Em tramitação',
-    date: '2024-10-26',
-    authorId: '3',
-    authorName: 'Senador Carlos Almeida',
-    currentStage: 'Comissão de Segurança',
-    progress: 30,
-    isFavorite: false,
-    interactionsCount: 156,
-    interactionsToday: 32,
-  },
-];
+// Mock removed
+
 
 export const TrendingScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
-  const [trendingProjects, setTrendingProjects] = useState<TrendingProject[]>(MOCK_TRENDING_PROJECTS);
+  const [trendingProjects, setTrendingProjects] = useState<TrendingProject[]>([]);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -85,12 +42,63 @@ export const TrendingScreen: React.FC = () => {
   const loadTrendingProjects = async () => {
     try {
       setLoading(true);
-      // TODO: Buscar projetos em alta da API
-      // Por enquanto usa mock data
+      const { data: trendingData, error } = await projectsService.getTrending();
+
+      if (error) {
+        console.error('Erro ao buscar trending:', error);
+        setTrendingProjects([]);
+      } else if (trendingData && trendingData.length > 0) {
+        // Fetch real details for each trending project
+        const enrichedProjects = await Promise.all(
+          trendingData.map(async (t: any) => {
+            try {
+              // Extract numeric ID from "camara-123" or just use it if it's numeric
+              // Assuming format "camara-XXXX" or just "XXXX"
+              let numericId: number;
+              if (t.project_id.toString().includes('camara-')) {
+                const parts = t.project_id.split('-');
+                numericId = parseInt(parts[parts.length - 1]);
+              } else {
+                numericId = parseInt(t.project_id);
+              }
+
+              if (isNaN(numericId)) return null;
+
+              const propDetails = await fetchCamaraPropositionDetails(numericId);
+              const authors = await fetchCamaraPropositionAuthors(numericId);
+              const project = transformCamaraToProject(propDetails, authors);
+
+              return {
+                ...project,
+                interactionsCount: parseInt(t.interaction_count),
+                interactionsToday: parseInt(t.interaction_count), // Simplified
+                id: t.project_id // Keep the ID from backend to ensure consistency
+              };
+            } catch (err) {
+              console.error(`Error fetching details for ${t.project_id}:`, err);
+              return null;
+            }
+          })
+        );
+
+        const validProjects = enrichedProjects.filter(Boolean) as TrendingProject[];
+        setTrendingProjects(validProjects);
+      } else {
+        setTrendingProjects([]);
+      }
+
+      // Load favorites to check status
+      const { data: favs } = await favoritesService.getFavorites();
+      if (favs) {
+        const favIds = new Set<string>(favs.map((f: any) => f.project_id));
+        setFavorites(favIds);
+      }
+
       setLoading(false);
     } catch (error) {
       console.error('Erro ao carregar projetos em alta:', error);
       setLoading(false);
+      setTrendingProjects([]);
     }
   };
 
@@ -112,20 +120,23 @@ export const TrendingScreen: React.FC = () => {
     setRefreshing(false);
   };
 
-  const handleSupport = (projectId: string) => {
+  const handleSupport = async (projectId: string) => {
     console.log('Apoiar projeto:', projectId);
-    // TODO: Implementar lógica de apoio
+    const { error } = await projectsService.registerInteraction(projectId, 'like');
+    if (!error) {
+      loadTrendingProjects(); // Refresh to show new counts
+    }
   };
 
-  const handleAgainst = (projectId: string) => {
+  const handleAgainst = async (projectId: string) => {
     console.log('Contra projeto:', projectId);
-    // TODO: Implementar lógica de oposição
+    const { error } = await projectsService.registerInteraction(projectId, 'dislike');
+    if (!error) {
+      loadTrendingProjects(); // Refresh to show new counts
+    }
   };
 
-  const handleAlert = (projectId: string) => {
-    console.log('Alertar projeto:', projectId);
-    // TODO: Implementar lógica de alerta
-  };
+
 
   const navigateToNotifications = () => {
     navigation.navigate('Notifications');
@@ -204,7 +215,6 @@ export const TrendingScreen: React.FC = () => {
               onToggleFavorite={handleToggleFavorite}
               onSupport={handleSupport}
               onAgainst={handleAgainst}
-              onAlert={handleAlert}
             />
             {/* Trending Badge */}
             <View style={styles.trendingBadge}>

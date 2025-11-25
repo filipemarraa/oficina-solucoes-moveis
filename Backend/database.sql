@@ -64,3 +64,16 @@ CREATE TRIGGER update_users_updated_at
 -- Inserir usuário de teste (opcional)
 -- INSERT INTO users (name, email, password) VALUES 
 -- ('Teste', 'teste@example.com', '$2b$10$XYZ...'); -- Senha: senha123
+
+-- Tabela de interações (likes/dislikes)
+CREATE TABLE project_interactions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+  project_id TEXT NOT NULL,
+  interaction_type VARCHAR(20) CHECK (interaction_type IN ('like', 'dislike')) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, project_id)
+);
+
+CREATE INDEX idx_interactions_project_id ON project_interactions(project_id);
+

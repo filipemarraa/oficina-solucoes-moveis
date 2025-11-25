@@ -9,7 +9,6 @@ interface ProjectCardProps {
   onToggleFavorite?: (id: string) => void;
   onSupport?: (id: string) => void;
   onAgainst?: (id: string) => void;
-  onAlert?: (id: string) => void;
 }
 
 export const ProjectCard: React.FC<ProjectCardProps> = ({
@@ -18,7 +17,6 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
   onToggleFavorite,
   onSupport,
   onAgainst,
-  onAlert,
 }) => {
   const getCategoryColor = (category: string): string => {
     const colorMap: { [key: string]: string } = {
@@ -69,13 +67,13 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
       if (dateString.includes('/')) {
         return dateString;
       }
-      
+
       // Se está em formato ISO (YYYY-MM-DD), converte
       const date = new Date(dateString + 'T00:00:00');
       if (isNaN(date.getTime())) {
         return dateString;
       }
-      
+
       return date.toLocaleDateString('pt-BR');
     } catch {
       return dateString;
@@ -95,8 +93,8 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
         </View>
 
         <View style={styles.headerRight}>
-          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(project.status) }]}> 
-            <Text style={[styles.statusText, { color: getStatusTextColor(project.status) }]}> 
+          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(project.status) }]}>
+            <Text style={[styles.statusText, { color: getStatusTextColor(project.status) }]}>
               {project.status}
             </Text>
           </View>
@@ -151,7 +149,6 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
           hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }}
         >
           <Text style={styles.actionIcon}>👍</Text>
-          <Text style={styles.actionButtonText}>Apoiar</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -160,18 +157,9 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
           hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }}
         >
           <Text style={styles.actionIcon}>👎</Text>
-          <Text style={styles.actionButtonText}>Contra</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.actionButtonCircle}
-          onPress={() => onAlert?.(project.id)}
-          hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }}
-        >
-          <Text style={styles.actionIconLarge}>🔔</Text>
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
+      </View >
+    </TouchableOpacity >
   );
 };
 

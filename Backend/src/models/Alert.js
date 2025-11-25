@@ -10,8 +10,16 @@ const Alert = {
   },
 
   async findByUser(userId) {
+    // Retorna alertas que:
+    // 1. Não têm projeto associado (alertas gerais do sistema)
+    // 2. OU têm projeto associado E o projeto está nos favoritos do usuário
     const result = await pool.query(
-      'SELECT * FROM alerts WHERE user_id = $1 ORDER BY created_at DESC',
+      `SELECT a.* 
+       FROM alerts a
+       LEFT JOIN favorites f ON a.project_id = f.project_id AND f.user_id = $1
+       WHERE a.user_id = $1 
+       AND (a.project_id IS NULL OR f.project_id IS NOT NULL)
+       ORDER BY a.created_at DESC`,
       [userId]
     );
     return result.rows;

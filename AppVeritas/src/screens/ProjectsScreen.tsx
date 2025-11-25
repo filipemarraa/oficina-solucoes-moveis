@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,19 +11,19 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ProjectCard, HeaderWithNotifications, FilterTabs } from '../components';
 import { Category, Project, RootStackParamList } from '../types';
 import { colors, fontSize, fontWeight, spacing } from '../constants/theme';
-import { 
+import {
   fetchCamaraPropositions,
   transformCamaraToProject,
   fetchCamaraPropositionAuthors,
   mapCategoria,
   fetchProjectsWithCategoryMinimum,
 } from '../services/governmentApi';
-import { favoritesService } from '../services/backendService';
+import { favoritesService, projectsService, alertsService } from '../services/backendService';
 import { batchUpdateProjectsStatus, clearStatusCache } from '../services/realTimeStatusService';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -46,12 +46,12 @@ export const ProjectsScreen: React.FC = () => {
   // Criar lista de categorias dinamicamente baseada nos interesses do usuário
   const filterCategories = React.useMemo(() => {
     const categories: (Category | 'Todos' | 'Palavras-chave')[] = ['Todos'];
-    
+
     // Adicionar filtro de palavras-chave se o usuário tiver keywords
     if (profile?.keywords && profile.keywords.length > 0) {
       categories.push('Palavras-chave');
     }
-    
+
     if (!profile?.interests || profile.interests.length === 0) {
       // Se não há interesses, mostra categorias padrão
       categories.push(
@@ -69,13 +69,19 @@ export const ProjectsScreen: React.FC = () => {
       // Se há interesses, adiciona os interesses do usuário
       categories.push(...profile.interests as Category[]);
     }
-    
+
     return categories;
   }, [profile?.interests, profile?.keywords]);
 
   useEffect(() => {
     loadInitialData();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadFavorites();
+    }, [])
+  );
 
   const loadInitialData = async () => {
     try {
@@ -132,10 +138,10 @@ export const ProjectsScreen: React.FC = () => {
     try {
       // Buscar projetos com garantia de mínimo por categoria
       const data = await fetchProjectsWithCategoryMinimum(5, 3);
-      
+
       // Atualizar contador
       setLoadingCount(data.length);
-      
+
       // Converter para Project type com todos os campos
       const mappedProjects: Project[] = data.map((transformed: any) => ({
         id: transformed.id,
@@ -156,7 +162,7 @@ export const ProjectsScreen: React.FC = () => {
         source: transformed.source,
         sourceId: transformed.sourceId,
       }));
-      
+
       setProjects(mappedProjects);
       return mappedProjects;
     } catch (error) {
@@ -179,22 +185,22 @@ export const ProjectsScreen: React.FC = () => {
 
   const filteredProjects = (() => {
     let filtered = projects;
-    
+
     // Filtrar por palavras-chave (busca em título e resumo)
     if (selectedCategory === 'Palavras-chave' && profile?.keywords && profile.keywords.length > 0) {
       filtered = filtered.filter(p => {
         const searchText = `${p.title} ${p.summary}`.toLowerCase();
-        return profile.keywords!.some(keyword => 
+        return profile.keywords!.some(keyword =>
           searchText.includes(keyword.toLowerCase())
         );
       });
     }
     // Filtrar por interesses do usuário (se ativado)
     else if (filterByInterests && profile?.interests && profile.interests.length > 0) {
-      filtered = filtered.filter(p => 
+      filtered = filtered.filter(p =>
         profile.interests.includes(p.category)
       );
-    } 
+    }
     // Filtrar por categoria selecionada
     else if (selectedCategory !== 'Todos') {
       filtered = filtered.filter(p => p.category === selectedCategory);
@@ -203,7 +209,7 @@ export const ProjectsScreen: React.FC = () => {
     if (selectedStatus && selectedStatus !== 'Todos') {
       filtered = filtered.filter(p => (p.status || 'Em tramitação') === selectedStatus);
     }
-    
+
     return filtered;
   })();
 
@@ -221,10 +227,24 @@ export const ProjectsScreen: React.FC = () => {
     const isFavorite = favorites.has(id);
 
     if (isFavorite) {
-        try {
-          console.log('[ProjectsScreen] removeFavorite called with projectId=', projectId);
-          const { data, error } = await favoritesService.removeFavorite(projectId);
-          if (!error) {
+      try {
+        console.log('[ProjectsScreen] removeFavorite called with projectId=', projectId);
+        const { data, error } = await favoritesService.removeFavorite(projectId);
+        if (!error) {
+          setFavorites(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(id);
+            return newSet;
+          });
+          await loadFavorites();
+          return;
+        }
+
+        // retry without possible prefix
+        if (projectId.startsWith('camara-')) {
+          const altId = projectId.replace(/^camara-/, '');
+          const retry = await favoritesService.removeFavorite(altId);
+          if (!retry.error) {
             setFavorites(prev => {
               const newSet = new Set(prev);
               newSet.delete(id);
@@ -233,31 +253,17 @@ export const ProjectsScreen: React.FC = () => {
             await loadFavorites();
             return;
           }
-
-          // retry without possible prefix
-          if (projectId.startsWith('camara-')) {
-            const altId = projectId.replace(/^camara-/, '');
-            const retry = await favoritesService.removeFavorite(altId);
-            if (!retry.error) {
-              setFavorites(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(id);
-                return newSet;
-              });
-              await loadFavorites();
-              return;
-            }
-          }
-
-          // fallback: reload favorites
-          await loadFavorites();
-          console.error('Erro ao remover favorito:', error || data);
-          Alert.alert('Erro', typeof error === 'string' ? error : 'Erro ao remover favorito');
-        } catch (err) {
-          console.error('Erro ao remover favorito (catch):', err);
-          await loadFavorites();
-          Alert.alert('Erro', 'Erro ao remover favorito');
         }
+
+        // fallback: reload favorites
+        await loadFavorites();
+        console.error('Erro ao remover favorito:', error || data);
+        Alert.alert('Erro', typeof error === 'string' ? error : 'Erro ao remover favorito');
+      } catch (err) {
+        console.error('Erro ao remover favorito (catch):', err);
+        await loadFavorites();
+        Alert.alert('Erro', 'Erro ao remover favorito');
+      }
     } else {
       const { error } = await favoritesService.addFavorite(projectId, project);
       if (!error) {
@@ -283,7 +289,7 @@ export const ProjectsScreen: React.FC = () => {
 
     try {
       console.log('🔄 Iniciando atualização de status em tempo real...');
-      
+
       const results = await batchUpdateProjectsStatus(
         projects,
         (current, total) => {
@@ -306,7 +312,7 @@ export const ProjectsScreen: React.FC = () => {
       });
 
       setProjects(updatedProjects);
-      
+
       console.log(`✅ ${results.size} projetos atualizados com sucesso`);
       Alert.alert(
         'Atualização Concluída',
@@ -321,19 +327,24 @@ export const ProjectsScreen: React.FC = () => {
     }
   };
 
-  const handleSupport = (projectId: string) => {
+  const handleSupport = async (projectId: string) => {
     console.log('Apoiar projeto:', projectId);
-    Alert.alert('Apoiar', `Você apoiou o projeto ${projectId}`);
+    const { error } = await projectsService.registerInteraction(projectId, 'like');
+    if (error) {
+      Alert.alert('Erro', 'Não foi possível registrar seu apoio.');
+    } else {
+      Alert.alert('Sucesso', 'Seu apoio foi registrado!');
+    }
   };
 
-  const handleAgainst = (projectId: string) => {
+  const handleAgainst = async (projectId: string) => {
     console.log('Contra projeto:', projectId);
-    Alert.alert('Contra', `Você se posicionou contra o projeto ${projectId}`);
-  };
-
-  const handleAlert = (projectId: string) => {
-    console.log('Alertar projeto:', projectId);
-    Alert.alert('Alerta', `Você ativou alertas para o projeto ${projectId}`);
+    const { error } = await projectsService.registerInteraction(projectId, 'dislike');
+    if (error) {
+      Alert.alert('Erro', 'Não foi possível registrar sua posição.');
+    } else {
+      Alert.alert('Sucesso', 'Sua posição contra foi registrada!');
+    }
   };
 
   if (loading) {
@@ -404,7 +415,7 @@ export const ProjectsScreen: React.FC = () => {
               ))}
             </ScrollView>
           </View>
-          
+
           {/* Status filter tabs */}
           <View style={{ backgroundColor: colors.white }}>
             <FilterTabs
@@ -437,13 +448,13 @@ export const ProjectsScreen: React.FC = () => {
               </View>
             </View>
           )}
-          
+
           <View style={styles.filterCountContainer}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <Text style={styles.filterCountText}>
                 {filteredProjects.length} {filteredProjects.length === 1 ? 'projeto' : 'projetos'}
               </Text>
-              
+
               {/* Botão de atualizar status */}
               <TouchableOpacity
                 onPress={handleUpdateAllStatus}
@@ -495,7 +506,6 @@ export const ProjectsScreen: React.FC = () => {
             onToggleFavorite={handleToggleFavorite}
             onSupport={handleSupport}
             onAgainst={handleAgainst}
-            onAlert={handleAlert}
           />
         )}
         keyExtractor={(item) => item.id}
