@@ -2,6 +2,7 @@ import axios from 'axios';
 import AI_CONFIG from './aiConfig';
 
 // Base URLs for Government APIs
+// Documentation: https://dadosabertos.camara.leg.br/swagger/api.html
 const CAMARA_API_BASE = 'https://dadosabertos.camara.leg.br/api/v2';
 const SENADO_API_BASE = 'https://legis.senado.leg.br/dadosabertos';
 
@@ -121,16 +122,16 @@ export interface SenadoProposition {
 // Category mapping from government data - Enhanced version
 export const mapCategoria = (keywords: string = '', ementa: string = ''): string => {
   const text = `${keywords || ''} ${ementa || ''}`.toLowerCase().trim();
-  
+
   // Return default if empty
   if (!text) {
     return 'Economia'; // Default para projetos sem descrição
   }
-  
+
   // SAÚDE - termos expandidos
   if (
-    text.includes('saúde') || text.includes('saude') || 
-    text.includes('sus') || text.includes('hospital') || 
+    text.includes('saúde') || text.includes('saude') ||
+    text.includes('sus') || text.includes('hospital') ||
     text.includes('médico') || text.includes('medico') ||
     text.includes('medicamento') || text.includes('vacina') ||
     text.includes('enfermeiro') || text.includes('tratamento') ||
@@ -141,11 +142,11 @@ export const mapCategoria = (keywords: string = '', ementa: string = ''): string
   ) {
     return 'Saúde';
   }
-  
+
   // EDUCAÇÃO - termos expandidos
   if (
     text.includes('educação') || text.includes('educacao') ||
-    text.includes('escola') || text.includes('ensino') || 
+    text.includes('escola') || text.includes('ensino') ||
     text.includes('professor') || text.includes('aluno') ||
     text.includes('universidade') || text.includes('faculdade') ||
     text.includes('estudante') || text.includes('curso') ||
@@ -156,11 +157,11 @@ export const mapCategoria = (keywords: string = '', ementa: string = ''): string
   ) {
     return 'Educação';
   }
-  
+
   // SEGURANÇA - termos expandidos
   if (
     text.includes('segurança') || text.includes('seguranca') ||
-    text.includes('polícia') || text.includes('policia') || 
+    text.includes('polícia') || text.includes('policia') ||
     text.includes('crime') || text.includes('criminal') ||
     text.includes('violência') || text.includes('violencia') ||
     text.includes('penal') || text.includes('presídio') || text.includes('presidio') ||
@@ -172,11 +173,11 @@ export const mapCategoria = (keywords: string = '', ementa: string = ''): string
   ) {
     return 'Segurança';
   }
-  
+
   // TRABALHO - termos expandidos
   if (
     text.includes('trabalho') || text.includes('trabalhista') ||
-    text.includes('emprego') || text.includes('trabalhador') || 
+    text.includes('emprego') || text.includes('trabalhador') ||
     text.includes('salário') || text.includes('salario') ||
     text.includes('remuneração') || text.includes('remuneracao') ||
     text.includes('contrato de trabalho') || text.includes('clt') ||
@@ -187,10 +188,10 @@ export const mapCategoria = (keywords: string = '', ementa: string = ''): string
   ) {
     return 'Trabalho';
   }
-  
+
   // MEIO AMBIENTE - termos expandidos
   if (
-    text.includes('meio ambiente') || text.includes('ambiental') || 
+    text.includes('meio ambiente') || text.includes('ambiental') ||
     text.includes('sustentável') || text.includes('sustentavel') ||
     text.includes('clima') || text.includes('climática') || text.includes('climatica') ||
     text.includes('ecológico') || text.includes('ecologico') ||
@@ -207,11 +208,11 @@ export const mapCategoria = (keywords: string = '', ementa: string = ''): string
   ) {
     return 'Meio Ambiente';
   }
-  
+
   // TECNOLOGIA - termos expandidos
   if (
     text.includes('tecnologia') || text.includes('tecnológico') || text.includes('tecnologico') ||
-    text.includes('digital') || text.includes('internet') || 
+    text.includes('digital') || text.includes('internet') ||
     text.includes('dados') || text.includes('informação') || text.includes('informacao') ||
     text.includes('software') || text.includes('aplicativo') ||
     text.includes('computador') || text.includes('eletrônico') || text.includes('eletronico') ||
@@ -223,10 +224,10 @@ export const mapCategoria = (keywords: string = '', ementa: string = ''): string
   ) {
     return 'Tecnologia';
   }
-  
+
   // DIREITOS HUMANOS - termos expandidos
   if (
-    text.includes('direitos humanos') || 
+    text.includes('direitos humanos') ||
     text.includes('igualdade') || text.includes('equidade') ||
     text.includes('discriminação') || text.includes('discriminacao') ||
     text.includes('lgbtqi') || text.includes('lgbt') ||
@@ -240,7 +241,7 @@ export const mapCategoria = (keywords: string = '', ementa: string = ''): string
   ) {
     return 'Direitos Humanos';
   }
-  
+
   // ECONOMIA - termos expandidos (verificar por último pois é muito amplo)
   if (
     text.includes('economia') || text.includes('econômico') || text.includes('economico') ||
@@ -257,14 +258,14 @@ export const mapCategoria = (keywords: string = '', ementa: string = ''): string
   ) {
     return 'Economia';
   }
-  
+
   // Se não encontrou nenhuma categoria específica, retorna Economia (mais genérico para leis)
   return 'Economia';
 };
 
 // Status mapping - Improved version with more cases
 export const mapStatus = (
-  descricaoSituacao: string = '', 
+  descricaoSituacao: string = '',
   codSituacao?: number
 ): string => {
   // If both missing, default
@@ -503,13 +504,13 @@ export const fetchCamaraPropositionAuthors = async (
         const response = await axios.get(`${CAMARA_API_BASE}/proposicoes/${id}/autores`, {
           timeout: 10000,
         });
-        
+
         const authors = response.data.dados || [];
         authorsCache.set(id, authors); // Cache the result
         return authors;
       } catch (error: any) {
         const statusCode = error.response?.status;
-        
+
         if (statusCode === 429) {
           // Rate limit - wait and retry
           if (attempt < retries) {
@@ -519,14 +520,14 @@ export const fetchCamaraPropositionAuthors = async (
             continue;
           }
         }
-        
+
         if (attempt === retries) {
           console.error(`❌ Erro ao buscar autores do projeto ${id}: ${error.message}`);
           return []; // Return empty array on final failure
         }
       }
     }
-    
+
     return [];
   });
 };
@@ -559,7 +560,7 @@ export const transformCamaraToProject = (
   authors: CamaraAuthor[] = []
 ): any => {
   const mainAuthor = authors.find(a => a.proponente === 1) || authors[0];
-  
+
   // Format date properly
   const formatDate = (dateString: string): string => {
     try {
@@ -572,16 +573,16 @@ export const transformCamaraToProject = (
       return new Date().toISOString().split('T')[0];
     }
   };
-  
+
   // Use AI categorization if enabled, otherwise fallback to rules
   const category = mapCategoria(proposition.keywords || '', proposition.ementa || '');
-  
+
   // Debug log (apenas em desenvolvimento)
   if (__DEV__) {
     console.log(`📊 Categorização: "${proposition.siglaTipo} ${proposition.numero}/${proposition.ano}" -> ${category}`);
     console.log(`   Ementa: ${(proposition.ementa || '').substring(0, 60)}...`);
   }
-  
+
   return {
     id: `camara-${proposition.id}`,
     title: proposition.ementa || `${proposition.siglaTipo} ${proposition.numero}/${proposition.ano}`,
@@ -612,7 +613,7 @@ export const transformCamaraToProject_AI = async (
   authors: CamaraAuthor[] = []
 ): Promise<any> => {
   const mainAuthor = authors.find(a => a.proponente === 1) || authors[0];
-  
+
   // Format date properly
   const formatDate = (dateString: string): string => {
     try {
@@ -625,11 +626,11 @@ export const transformCamaraToProject_AI = async (
       return new Date().toISOString().split('T')[0];
     }
   };
-  
+
   // Try AI categorization if enabled
   let category;
   let status;
-  
+
   if (AI_CONFIG.ENABLED) {
     try {
       const ai = await getAIService();
@@ -646,14 +647,14 @@ export const transformCamaraToProject_AI = async (
             currentStage: proposition.statusProposicao?.descricaoTramitacao || '',
           }
         );
-        
+
         // AI Status Analysis
         status = await ai.analyzeStatus_AI(
           proposition.statusProposicao?.descricaoSituacao || '',
           proposition.statusProposicao?.descricaoTramitacao || '',
           proposition.statusProposicao?.despacho || ''
         );
-        
+
         if (__DEV__) {
           console.log(`🤖 AI: ${proposition.siglaTipo} ${proposition.numero}/${proposition.ano} -> ${category} | ${status}`);
         }
@@ -664,7 +665,7 @@ export const transformCamaraToProject_AI = async (
       }
     }
   }
-  
+
   // Fallback to rule-based if AI not available
   if (!category) {
     category = mapCategoria(proposition.keywords || '', proposition.ementa || '');
@@ -675,7 +676,7 @@ export const transformCamaraToProject_AI = async (
       proposition.statusProposicao?.codSituacao
     );
   }
-  
+
   return {
     id: `camara-${proposition.id}`,
     title: proposition.ementa || `${proposition.siglaTipo} ${proposition.numero}/${proposition.ano}`,
@@ -701,7 +702,7 @@ export const fetchAllProjects = async (page: number = 1) => {
   try {
     // Fetch from Câmara (50 projetos por página)
     const camaraProps = await fetchCamaraPropositions(50, page);
-    
+
     // Transform with authors
     const projects = await Promise.all(
       camaraProps.map(async (prop) => {
@@ -728,7 +729,7 @@ export const fetchProjectsWithCategoryMinimum = async (
   try {
     const allProjects: any[] = [];
     const categoryCounts: { [key: string]: number } = {};
-    
+
     // Categories to track
     const CATEGORIES = [
       'Saúde',
@@ -740,50 +741,50 @@ export const fetchProjectsWithCategoryMinimum = async (
       'Tecnologia',
       'Direitos Humanos',
     ];
-    
+
     // Initialize counts
     CATEGORIES.forEach(cat => {
       categoryCounts[cat] = 0;
     });
-    
+
     // Fetch multiple pages until we have minimum per category
     for (let page = 1; page <= maxPages; page++) {
       console.log(`📄 Buscando página ${page}...`);
-      
+
       const camaraProps = await fetchCamaraPropositions(50, page);
-      
+
       if (camaraProps.length === 0) {
         console.log('⚠️ Sem mais projetos disponíveis');
         break;
       }
-      
+
       // Transform and count
       const pageProjects = await Promise.all(
         camaraProps.map(async (prop) => {
           const authors = await fetchCamaraPropositionAuthors(prop.id);
           const transformed = await transformCamaraToProject_AI(prop, authors);
-          
+
           // Count by category
           if (CATEGORIES.includes(transformed.category)) {
             categoryCounts[transformed.category]++;
           }
-          
+
           return transformed;
         })
       );
-      
+
       allProjects.push(...pageProjects);
-      
+
       // Check if we have minimum for all categories
       const hasMinimum = CATEGORIES.every(
         cat => categoryCounts[cat] >= minPerCategory
       );
-      
+
       if (hasMinimum) {
         console.log('✅ Atingido mínimo de projetos por categoria!');
         break;
       }
-      
+
       // Log current status
       console.log('📊 Status de categorias:');
       CATEGORIES.forEach(cat => {
@@ -792,7 +793,7 @@ export const fetchProjectsWithCategoryMinimum = async (
         console.log(`   ${status} ${cat}: ${count}/${minPerCategory}`);
       });
     }
-    
+
     return allProjects;
   } catch (error) {
     console.error('Error fetching projects with category minimum:', error);
@@ -813,7 +814,7 @@ export const searchProjects = async (query: string) => {
     });
 
     const propositions = response.data.dados || [];
-    
+
     const projects = await Promise.all(
       propositions.map(async (prop: CamaraProposition) => {
         const authors = await fetchCamaraPropositionAuthors(prop.id);
@@ -875,7 +876,7 @@ export const fetchCamaraRealTimeStatus = async (
     );
 
     const statusProposicao = response.data.dados?.statusProposicao;
-    
+
     if (!statusProposicao) {
       throw new Error('Status da proposição não encontrado');
     }
@@ -924,22 +925,22 @@ export const fetchSenadoRealTimeStatus = async (
 
       // Parse XML (simplificado - em produção use um parser XML apropriado)
       const xmlData = response.data;
-      
+
       // Buscar pelo codigoMateria no XML
       const codigoMateriaRegex = new RegExp(
         `<codigoMateria>${materiaId}</codigoMateria>[\\s\\S]*?<textoResultado>([\\s\\S]*?)</textoResultado>[\\s\\S]*?<descricaoDeliberacao>([\\s\\S]*?)</descricaoDeliberacao>`,
         'i'
       );
-      
+
       const match = xmlData.match(codigoMateriaRegex);
-      
+
       if (match) {
         const textoResultado = match[1].trim();
         const descricaoDeliberacao = match[2].trim();
-        
+
         // Inferir status baseado no textoResultado
         let status = 'Em tramitação';
-        
+
         if (/aprovad[ao]/i.test(textoResultado) || /sanção/i.test(textoResultado)) {
           status = 'Aprovado';
         } else if (/arquivad[ao]/i.test(textoResultado)) {
@@ -951,7 +952,7 @@ export const fetchSenadoRealTimeStatus = async (
         } else if (/votação|deliberação/i.test(textoResultado)) {
           status = 'Em votação';
         }
-        
+
         return {
           status,
           textoResultado,
@@ -959,7 +960,7 @@ export const fetchSenadoRealTimeStatus = async (
         };
       }
     }
-    
+
     // Fallback: buscar matéria diretamente
     // Endpoint alternativo: /materia/{codigo} (retorna XML com detalhes)
     throw new Error('Matéria não encontrada no resultado do plenário da data especificada');
@@ -1003,7 +1004,7 @@ export const fetchRealTimeProjectStatus = async (
         details: result,
       };
     }
-    
+
     throw new Error('Fonte desconhecida');
   } catch (error) {
     console.error('Erro ao buscar status em tempo real:', error);

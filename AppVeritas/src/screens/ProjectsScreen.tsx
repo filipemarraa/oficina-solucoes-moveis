@@ -9,9 +9,13 @@ import {
   RefreshControl,
   ActivityIndicator,
   Alert,
+  LayoutAnimation,
+  Platform,
+  UIManager,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ProjectCard, HeaderWithNotifications, FilterTabs } from '../components';
 import { Category, Project, RootStackParamList } from '../types';
@@ -42,6 +46,21 @@ export const ProjectsScreen: React.FC = () => {
   const [loadingCount, setLoadingCount] = useState(0);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [updateProgress, setUpdateProgress] = useState({ current: 0, total: 0 });
+
+  // Enable LayoutAnimation on Android
+  if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+  }
+
+  const handleCategoryChange = (category: Category | 'Todos' | 'Palavras-chave') => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setSelectedCategory(category);
+  };
+
+  const handleStatusChange = (status: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setSelectedStatus(status);
+  };
 
   // Criar lista de categorias dinamicamente baseada nos interesses do usuário
   const filterCategories = React.useMemo(() => {
@@ -85,52 +104,69 @@ export const ProjectsScreen: React.FC = () => {
 
   const loadInitialData = async () => {
     try {
-      // Load projects and favorites (do not block status refresh)
+      // 1. Try to load from cache first
+      const cachedData = await AsyncStorage.getItem('projects_cache');
+      if (cachedData) {
+        const parsedProjects = JSON.parse(cachedData);
+        setProjects(parsedProjects);
+        setLoading(false);
+
+        // Load favorites in background
+        loadFavorites();
+
+        // Optional: Update status in background if needed, but don't block
+        // batchUpdateProjectsStatus...
+        return;
+      }
+
+      // 2. If no cache, load from API
       const loadedProjects = await loadProjects();
       await loadFavorites();
 
-      // Show projects immediately
       setLoading(false);
 
-      // Start status update in background so the user can see the list right away
+      // Start status update in background
       if (loadedProjects && loadedProjects.length > 0) {
-        (async () => {
-          setUpdatingStatus(true);
-          setUpdateProgress({ current: 0, total: loadedProjects.length });
-
-          try {
-            const results = await batchUpdateProjectsStatus(
-              loadedProjects,
-              (current, total) => setUpdateProgress({ current, total })
-            );
-
-            // Apply results to projects
-            setProjects((currentProjects) => {
-              // Map current projects and update only fields returned by results
-              return currentProjects.map((project) => {
-                const result = results.get(project.id);
-                if (result && result.status) {
-                  return {
-                    ...project,
-                    status: result.status as any,
-                    statusDetails: result.details,
-                    progress: typeof result.progress === 'number' ? result.progress : project.progress,
-                  };
-                }
-                return project;
-              });
-            });
-          } catch (err) {
-            console.error('Erro ao atualizar status automaticamente:', err);
-          } finally {
-            setUpdatingStatus(false);
-            setUpdateProgress({ current: 0, total: 0 });
-          }
-        })();
+        updateStatusForProjects(loadedProjects);
       }
     } catch (err) {
       console.error('Erro no loadInitialData:', err);
       setLoading(false);
+    }
+  };
+
+  const updateStatusForProjects = async (projectsToUpdate: Project[]) => {
+    setUpdatingStatus(true);
+    setUpdateProgress({ current: 0, total: projectsToUpdate.length });
+
+    try {
+      const results = await batchUpdateProjectsStatus(
+        projectsToUpdate,
+        (current, total) => setUpdateProgress({ current, total })
+      );
+
+      setProjects((currentProjects) => {
+        const updated = currentProjects.map((project) => {
+          const result = results.get(project.id);
+          if (result && result.status) {
+            return {
+              ...project,
+              status: result.status as any,
+              statusDetails: result.details,
+              progress: typeof result.progress === 'number' ? result.progress : project.progress,
+            };
+          }
+          return project;
+        });
+        // Update cache with new statuses
+        AsyncStorage.setItem('projects_cache', JSON.stringify(updated));
+        return updated;
+      });
+    } catch (err) {
+      console.error('Erro ao atualizar status automaticamente:', err);
+    } finally {
+      setUpdatingStatus(false);
+      setUpdateProgress({ current: 0, total: 0 });
     }
   };
 
@@ -164,6 +200,9 @@ export const ProjectsScreen: React.FC = () => {
       }));
 
       setProjects(mappedProjects);
+      // Save to cache
+      await AsyncStorage.setItem('projects_cache', JSON.stringify(mappedProjects));
+
       return mappedProjects;
     } catch (error) {
       console.error('Erro ao carregar projetos:', error);
@@ -274,7 +313,12 @@ export const ProjectsScreen: React.FC = () => {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadInitialData();
+    // Force reload from API
+    const loadedProjects = await loadProjects();
+    await loadFavorites();
+    if (loadedProjects.length > 0) {
+      updateStatusForProjects(loadedProjects);
+    }
     setRefreshing(false);
   };
 
@@ -400,7 +444,7 @@ export const ProjectsScreen: React.FC = () => {
                     styles.tab,
                     selectedCategory === category && styles.tabActive,
                   ]}
-                  onPress={() => setSelectedCategory(category)}
+                  onPress={() => handleCategoryChange(category)}
                   activeOpacity={0.7}
                 >
                   <Text
@@ -431,7 +475,7 @@ export const ProjectsScreen: React.FC = () => {
                 'Retirado',
               ]}
               selectedOption={selectedStatus}
-              onSelectOption={(opt) => setSelectedStatus(opt)}
+              onSelectOption={(opt) => handleStatusChange(opt)}
             />
           </View>
 

@@ -45,7 +45,7 @@ export const RootNavigator: React.FC = () => {
     try {
       const onboarding = await AsyncStorage.getItem(STORAGE_KEYS.HAS_SEEN_ONBOARDING);
       setHasSeenOnboarding(onboarding === 'true');
-      
+
       const completedInterests = await AsyncStorage.getItem(STORAGE_KEYS.HAS_COMPLETED_INTERESTS);
       setHasCompletedInterests(completedInterests === 'true');
     } catch (error) {
@@ -93,7 +93,13 @@ export const RootNavigator: React.FC = () => {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator
+        screenOptions={{
+          headerShown: false,
+          animation: 'slide_from_right',
+          animationDuration: 200,
+        }}
+      >
         {!isAuthenticated ? (
           // Usuário não autenticado - mostrar Auth
           <Stack.Screen name="Auth" component={AuthScreen} />

@@ -40,6 +40,7 @@ export const MainTabNavigator: React.FC = () => {
           fontSize: fontSize.xs,
           fontWeight: '600',
         },
+        animation: 'fade',
       }}
     >
       <Tab.Screen
