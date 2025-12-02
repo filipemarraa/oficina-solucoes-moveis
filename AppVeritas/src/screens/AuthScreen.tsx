@@ -140,7 +140,18 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
             activeOpacity={0.7}
             disabled={true}
           >
-            <Text style={styles.socialIcon}>G</Text>
+            <Image
+              source={require('../assets/images/google-logo.png')}
+              style={styles.socialLogo}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.socialButton}
+            activeOpacity={0.7}
+            disabled={true}
+          >
+            <Text style={[styles.socialIcon, { fontSize: 16 }]}>Gov.br</Text>
           </TouchableOpacity>
         </View>
 
@@ -154,7 +165,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardAvoidingView >
   );
 };
 
@@ -212,6 +223,7 @@ const styles = StyleSheet.create({
   },
   tabTextActive: {
     color: colors.white,
+    fontWeight: fontWeight.bold,
   },
   form: {
     marginBottom: spacing.xl,
@@ -254,6 +266,10 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xl,
     fontWeight: fontWeight.bold,
     color: colors.primary,
+  },
+  socialLogo: {
+    width: 24,
+    height: 24,
   },
   footer: {
     flexDirection: 'row',

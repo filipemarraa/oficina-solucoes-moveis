@@ -409,7 +409,7 @@ export const ProjectsScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       {/* Header with Notifications */}
-      <HeaderWithNotifications title="Projetos" unreadCount={3} />
+      <HeaderWithNotifications title="Projetos" unreadCount={0} />
 
       {/* Status Update Progress */}
       {updatingStatus && (

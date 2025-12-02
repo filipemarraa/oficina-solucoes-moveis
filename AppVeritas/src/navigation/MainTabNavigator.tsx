@@ -20,7 +20,7 @@ const TabIcon = ({ emoji, focused }: { emoji: string; focused: boolean }) => (
 );
 
 export const MainTabNavigator: React.FC = () => {
-  const trendingBadgeCount = 3; // Mock - virá do contexto/estado global
+  const trendingBadgeCount = 0; // Mock - virá do contexto/estado global
   const insets = useSafeAreaInsets();
 
   return (

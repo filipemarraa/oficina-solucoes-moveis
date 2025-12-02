@@ -101,9 +101,9 @@ export const FavoritesScreen: React.FC = () => {
       }
 
       // fallback: recarregar favoritos para mostrar estado real e logar erro
-  await loadFavorites();
-  console.error('Erro ao remover favorito:', error || data);
-  Alert.alert('Erro', typeof error === 'string' ? error : 'Erro ao remover favorito');
+      await loadFavorites();
+      console.error('Erro ao remover favorito:', error || data);
+      Alert.alert('Erro', typeof error === 'string' ? error : 'Erro ao remover favorito');
     } catch (err) {
       console.error('Erro ao remover favorito (catch):', err);
       // Recarregar para manter UI consistente
@@ -148,7 +148,7 @@ export const FavoritesScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       {/* Header with Notifications */}
-      <HeaderWithNotifications title="Favoritos" unreadCount={3} />
+      <HeaderWithNotifications title="Favoritos" unreadCount={0} />
 
       {/* Favorites List */}
       {projects.length === 0 ? (

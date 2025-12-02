@@ -40,18 +40,18 @@ export const ProfileScreen: React.FC = () => {
   };
   const handleSaveInterests = async () => {
     setSavingInterests(true);
-    
+
     // Processar keywords
     const keywordsList = editKeywords
       .split(',')
       .map(k => k.trim().toLowerCase())
       .filter(k => k.length > 0);
-    
-    await updateProfile({ 
+
+    await updateProfile({
       interests: editInterests,
       keywords: keywordsList
     });
-    
+
     setSavingInterests(false);
     setModal(null);
   };
@@ -125,7 +125,7 @@ export const ProfileScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <HeaderWithNotifications title="Perfil" unreadCount={3} />
+      <HeaderWithNotifications title="Perfil" unreadCount={0} />
 
       <ScrollView
         style={styles.content}
@@ -183,7 +183,7 @@ export const ProfileScreen: React.FC = () => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Editar Interesses</Text>
-            
+
             <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
               {/* Categorias */}
               <Text style={styles.sectionTitle}>Categorias de Interesse</Text>

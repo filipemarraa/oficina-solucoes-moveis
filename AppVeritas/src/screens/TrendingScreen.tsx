@@ -33,7 +33,7 @@ export const TrendingScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const unreadNotifications = 3; // Mock - virá do contexto/estado global
+  const unreadNotifications = 0; // Mock - virá do contexto/estado global
 
   useEffect(() => {
     loadTrendingProjects();
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   headerContent: {
     flexDirection: 'row',
@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
   },
   notificationButton: {
     position: 'relative',
-    padding: spacing.sm,
+    padding: spacing.xs,
   },
   bellIcon: {
     fontSize: 24,
