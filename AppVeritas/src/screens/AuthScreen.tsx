@@ -7,6 +7,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Image,
   Alert,
 } from 'react-native';
 import { Button, Input } from '../components';
@@ -40,7 +41,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
           return;
         }
         await signUp(email, password, name);
-        
+
         // Fazer login automático após criar conta
         await signIn(email, password);
         onLogin?.(); // Navegar para onboarding/interests
@@ -56,7 +57,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.header}>
-        <Text style={styles.logo}>⚖️</Text>
+        <Image
+          source={require('../assets/images/logo.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
         <Text style={styles.headerTitle}>VERITAS</Text>
       </View>
 
@@ -130,8 +135,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
         </View>
 
         <View style={styles.socialContainer}>
-          <TouchableOpacity 
-            style={styles.socialButton} 
+          <TouchableOpacity
+            style={styles.socialButton}
             activeOpacity={0.7}
             disabled={true}
           >
@@ -160,12 +165,13 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: colors.primary,
-    paddingTop: 60,
+    paddingTop: 20,
     paddingBottom: spacing.xl,
     alignItems: 'center',
   },
   logo: {
-    fontSize: 60,
+    width: 120,
+    height: 120,
     marginBottom: spacing.sm,
   },
   headerTitle: {

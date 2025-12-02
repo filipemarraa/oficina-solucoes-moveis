@@ -35,7 +35,8 @@ export const RootNavigator: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // Verificar se é um novo usuário quando o user mudar
+    // Verificar estado inicial e se é novo usuário quando o user mudar
+    checkInitialState();
     if (user) {
       checkIfNewUser();
     }
